@@ -2,10 +2,11 @@
 
 ME=$(basename "$0")
 
-directory=${1:-empty}
+_DIRECTORY_TO_MIGRATE=${1:-empty}
+_NFS_SHARE_LOCATION="/nfs"
 
-origin=10.10.0.2
-destination=10.10.0.3
+ORIGIN_NFS_SERVER=10.10.0.2
+DESSTINATION_NFS_SERVER=10.10.0.3
 
 display_usage() {
     echo "usage:"
@@ -26,28 +27,28 @@ display_usage() {
     echo
 }
 
-if [ "$directory" == "empty" ]; then
+if [ "$_DIRECTORY_TO_MIGRATE" == "empty" ]; then
     display_usage
     exit 1
 fi
 
-if [ "$directory" == "list" ]; then
-    ssh $origin sudo ls /nfs
+if [ "$_DIRECTORY_TO_MIGRATE" == "list" ]; then
+    ssh $ORIGIN_NFS_SERVER sudo ls $_NFS_SHARE_LOCATION
     exit 1
 fi
 
-ssh $origin sudo tar -cvzpf "$directory.tar.gz" "/nfs/$directory"
+ssh $ORIGIN_NFS_SERVER sudo tar -cvzpf "$_DIRECTORY_TO_MIGRATE.tar.gz" "$_NFS_SHARE_LOCATION/$_DIRECTORY_TO_MIGRATE"
 
-scp $origin:"$directory.tar.gz" "$directory.tar.gz"
+scp $ORIGIN_NFS_SERVER:"$_DIRECTORY_TO_MIGRATE.tar.gz" "$_DIRECTORY_TO_MIGRATE.tar.gz"
 
-scp "$directory.tar.gz" $destination:"$directory.tar.gz"
+scp "$_DIRECTORY_TO_MIGRATE.tar.gz" $DESSTINATION_NFS_SERVER:"$_DIRECTORY_TO_MIGRATE.tar.gz"
 
-ssh $destination sudo tar --same-owner -xvzpf "$directory.tar.gz" -C /
-ssh $destination rm "$directory.tar.gz"
-ssh $origin rm -f "$directory.tar.gz"
+ssh $DESSTINATION_NFS_SERVER sudo tar --same-owner -xvzpf "$_DIRECTORY_TO_MIGRATE.tar.gz" -C /
+ssh $DESSTINATION_NFS_SERVER rm "$_DIRECTORY_TO_MIGRATE.tar.gz"
+ssh $ORIGIN_NFS_SERVER rm -f "$_DIRECTORY_TO_MIGRATE.tar.gz"
 
 echo
-echo "Contents of /nfs on destination server:"
-ssh $destination ls /nfs
+echo "Contents of $_NFS_SHARE_LOCATION on destination server:"
+ssh $DESSTINATION_NFS_SERVER ls $_NFS_SHARE_LOCATION
 
-rm "$directory.tar.gz"
+rm "$_DIRECTORY_TO_MIGRATE.tar.gz"
