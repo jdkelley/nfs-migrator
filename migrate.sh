@@ -6,7 +6,7 @@ _DIRECTORY_TO_MIGRATE=${1:-empty}
 _NFS_SHARE_LOCATION="/nfs"
 
 ORIGIN_NFS_SERVER=10.10.0.2
-DESSTINATION_NFS_SERVER=10.10.0.3
+DESTINATION_NFS_SERVER=10.10.0.3
 
 display_usage() {
     echo "usage:"
@@ -27,13 +27,18 @@ display_usage() {
     echo
 }
 
+list_nfs_share() {
+    local NFS_SERVER="${1}"
+    ssh $NFS_SERVER sudo ls $_NFS_SHARE_LOCATION
+}
+
 if [ "$_DIRECTORY_TO_MIGRATE" == "empty" ]; then
     display_usage
     exit 1
 fi
 
 if [ "$_DIRECTORY_TO_MIGRATE" == "list" ]; then
-    ssh $ORIGIN_NFS_SERVER sudo ls $_NFS_SHARE_LOCATION
+    list_nfs_share "$ORIGIN_NFS_SERVER"
     exit 1
 fi
 
@@ -44,17 +49,17 @@ ssh $ORIGIN_NFS_SERVER sudo tar -cvzpf "$_DIRECTORY_TO_MIGRATE.tar.gz" "$_NFS_SH
 scp $ORIGIN_NFS_SERVER:"$_DIRECTORY_TO_MIGRATE.tar.gz" "$_DIRECTORY_TO_MIGRATE.tar.gz"
 
 # Push the data to the destination server
-scp "$_DIRECTORY_TO_MIGRATE.tar.gz" $DESSTINATION_NFS_SERVER:"$_DIRECTORY_TO_MIGRATE.tar.gz"
+scp "$_DIRECTORY_TO_MIGRATE.tar.gz" $DESTINATION_NFS_SERVER:"$_DIRECTORY_TO_MIGRATE.tar.gz"
 
 # Unwrap directory to migrate with same permissions and ownership
-ssh $DESSTINATION_NFS_SERVER sudo tar --same-owner -xvzpf "$_DIRECTORY_TO_MIGRATE.tar.gz" -C /
+ssh $DESTINATION_NFS_SERVER sudo tar --same-owner -xvzpf "$_DIRECTORY_TO_MIGRATE.tar.gz" -C /
 
 # Remove tar-balls from both origin and destination servers
-ssh $DESSTINATION_NFS_SERVER rm "$_DIRECTORY_TO_MIGRATE.tar.gz"
+ssh $DESTINATION_NFS_SERVER rm "$_DIRECTORY_TO_MIGRATE.tar.gz"
 ssh $ORIGIN_NFS_SERVER rm -f "$_DIRECTORY_TO_MIGRATE.tar.gz"
 
 echo
 echo "Contents of $_NFS_SHARE_LOCATION on destination server:"
-ssh $DESSTINATION_NFS_SERVER ls $_NFS_SHARE_LOCATION
+list_nfs_share "$DESTINATION_NFS_SERVER"
 
 rm "$_DIRECTORY_TO_MIGRATE.tar.gz"
