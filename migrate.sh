@@ -37,13 +37,19 @@ if [ "$_DIRECTORY_TO_MIGRATE" == "list" ]; then
     exit 1
 fi
 
+# Wrap up the directory to migrate
 ssh $ORIGIN_NFS_SERVER sudo tar -cvzpf "$_DIRECTORY_TO_MIGRATE.tar.gz" "$_NFS_SHARE_LOCATION/$_DIRECTORY_TO_MIGRATE"
 
+# Pull the data locally
 scp $ORIGIN_NFS_SERVER:"$_DIRECTORY_TO_MIGRATE.tar.gz" "$_DIRECTORY_TO_MIGRATE.tar.gz"
 
+# Push the data to the destination server
 scp "$_DIRECTORY_TO_MIGRATE.tar.gz" $DESSTINATION_NFS_SERVER:"$_DIRECTORY_TO_MIGRATE.tar.gz"
 
+# Unwrap directory to migrate with same permissions and ownership
 ssh $DESSTINATION_NFS_SERVER sudo tar --same-owner -xvzpf "$_DIRECTORY_TO_MIGRATE.tar.gz" -C /
+
+# Remove tar-balls from both origin and destination servers
 ssh $DESSTINATION_NFS_SERVER rm "$_DIRECTORY_TO_MIGRATE.tar.gz"
 ssh $ORIGIN_NFS_SERVER rm -f "$_DIRECTORY_TO_MIGRATE.tar.gz"
 
